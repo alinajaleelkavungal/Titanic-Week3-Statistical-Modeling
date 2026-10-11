@@ -1,0 +1,115 @@
+# =========================================
+# Week 3 Internship Task
+# Statistical Analysis and Predictive Modeling using R
+# Dataset: Titanic
+# =========================================
+
+# Load the dataset
+titanic <- read.csv("train.csv")
+
+# View the first six rows
+head(titanic)
+
+# Check dataset structure
+str(titanic)
+
+# Check dimensions
+dim(titanic)
+dim(titanic)
+# =========================================
+# Check Missing Values
+# =========================================
+
+colSums(is.na(titanic))
+# =========================================
+# Handle Missing Age Values
+# =========================================
+
+median_age <- median(titanic$Age, na.rm = TRUE)
+
+titanic$Age[is.na(titanic$Age)] <- median_age
+sum(is.na(titanic$Age))
+sum(is.na(titanic$Age))
+# =========================================
+# Distribution of Survival Outcome
+# =========================================
+
+table(titanic$Survived)
+prop.table(table(titanic$Survived)) * 100
+# =========================================
+# Descriptive Statistical Analysis
+# =========================================
+
+summary(titanic)
+summary(titanic[, c("Age", "Fare", "SibSp", "Parch")])
+# =========================================
+# Hypothesis Test 1: Sex and Survival
+# =========================================
+
+sex_survival_table <- table(
+  titanic$Sex,
+  titanic$Survived
+)
+
+sex_survival_table
+chi_sex <- chisq.test(sex_survival_table)
+
+chi_sex
+# =========================================
+# Hypothesis Test 2: Fare and Survival
+# =========================================
+
+fare_survival_test <- t.test(
+  Fare ~ Survived,
+  data = titanic
+)
+
+fare_survival_test
+# =========================================
+# Correlation Analysis
+# =========================================
+
+correlation_data <- titanic[, c("Age", "Fare", "SibSp", "Parch")]
+
+correlation_matrix <- cor(correlation_data)
+
+correlation_matrix
+install.packages("corrplot")
+library(corrplot)
+corrplot(
+  correlation_matrix,
+  method = "color",
+  type = "upper",
+  addCoef.col = "black",
+  tl.col = "black",
+  tl.srt = 45
+)
+# Normality tests
+shapiro.test(titanic$Age)
+shapiro.test(titanic$Fare)
+# Q-Q plots
+par(mfrow = c(1, 2))
+
+qqnorm(titanic$Age, main = "Q-Q Plot: Age")
+qqline(titanic$Age)
+
+qqnorm(titanic$Fare, main = "Q-Q Plot: Fare")
+qqline(titanic$Fare)
+
+par(mfrow = c(1, 1))
+# =========================================
+# Normality Test Interpretation
+# =========================================
+
+# Shapiro-Wilk tests were used to assess whether
+# Age and Fare follow a normal distribution.
+
+# For the Shapiro-Wilk test:
+# H0: The data follows a normal distribution.
+# H1: The data does not follow a normal distribution.
+
+# A p-value < 0.05 indicates significant evidence
+# against normality.
+
+# The Q-Q plots are also used to visually assess
+# deviation from normality.
