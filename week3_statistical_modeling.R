@@ -1,0 +1,540 @@
+# =========================================
+# Week 3 Internship Task
+# Statistical Analysis and Predictive Modeling using R
+# Dataset: Titanic
+# =========================================
+
+# Load the dataset
+titanic <- read.csv("train.csv")
+
+# View the first six rows
+head(titanic)
+
+# Check dataset structure
+str(titanic)
+
+# Check dimensions
+dim(titanic)
+dim(titanic)
+# =========================================
+# Check Missing Values
+# =========================================
+
+colSums(is.na(titanic))
+# =========================================
+# Handle Missing Age Values
+# =========================================
+
+median_age <- median(titanic$Age, na.rm = TRUE)
+
+titanic$Age[is.na(titanic$Age)] <- median_age
+sum(is.na(titanic$Age))
+sum(is.na(titanic$Age))
+# =========================================
+# Distribution of Survival Outcome
+# =========================================
+
+table(titanic$Survived)
+prop.table(table(titanic$Survived)) * 100
+# =========================================
+# Descriptive Statistical Analysis
+# =========================================
+
+summary(titanic)
+summary(titanic[, c("Age", "Fare", "SibSp", "Parch")])
+# =========================================
+# Hypothesis Test 1: Sex and Survival
+# =========================================
+
+sex_survival_table <- table(
+  titanic$Sex,
+  titanic$Survived
+)
+
+sex_survival_table
+chi_sex <- chisq.test(sex_survival_table)
+
+chi_sex
+# =========================================
+# Hypothesis Test 2: Fare and Survival
+# =========================================
+
+fare_survival_test <- t.test(
+  Fare ~ Survived,
+  data = titanic
+)
+
+fare_survival_test
+# =========================================
+# Correlation Analysis
+# =========================================
+
+correlation_data <- titanic[, c("Age", "Fare", "SibSp", "Parch")]
+
+correlation_matrix <- cor(correlation_data)
+
+correlation_matrix
+install.packages("corrplot")
+library(corrplot)
+corrplot(
+  correlation_matrix,
+  method = "color",
+  type = "upper",
+  addCoef.col = "black",
+  tl.col = "black",
+  tl.srt = 45
+)
+# Normality tests
+shapiro.test(titanic$Age)
+shapiro.test(titanic$Fare)
+# Q-Q plots
+par(mfrow = c(1, 2))
+
+qqnorm(titanic$Age, main = "Q-Q Plot: Age")
+qqline(titanic$Age)
+
+qqnorm(titanic$Fare, main = "Q-Q Plot: Fare")
+qqline(titanic$Fare)
+
+par(mfrow = c(1, 1))
+# =========================================
+# Normality Test Interpretation
+# =========================================
+
+# Shapiro-Wilk tests were used to assess whether
+# Age and Fare follow a normal distribution.
+
+# For the Shapiro-Wilk test:
+# H0: The data follows a normal distribution.
+# H1: The data does not follow a normal distribution.
+
+# A p-value < 0.05 indicates significant evidence
+# against normality.
+
+# The Q-Q plots are also used to visually assess
+# deviation from normality.
+# =========================================
+# Prepare Data for Logistic Regression
+# =========================================
+
+# Convert categorical variables to factors
+titanic$Survived <- factor(
+  titanic$Survived,
+  levels = c(0, 1),
+  labels = c("No", "Yes")
+)
+
+titanic$Pclass <- factor(titanic$Pclass)
+titanic$Sex <- factor(titanic$Sex)
+titanic$Embarked <- factor(titanic$Embarked)
+
+# Select variables for the predictive model
+model_data <- titanic[, c(
+  "Survived",
+  "Pclass",
+  "Sex",
+  "Age",
+  "SibSp",
+  "Parch",
+  "Fare",
+  "Embarked"
+)]
+
+# Check the structure
+str(model_data)
+
+# Check for missing values
+colSums(is.na(model_data))
+# =========================================
+# Logistic Regression Model
+# =========================================
+
+logistic_model <- glm(
+  Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+  data = model_data,
+  family = binomial
+)
+
+# Display model results
+summary(logistic_model)
+# =========================================
+# Logistic Regression Model Fit
+# =========================================
+
+logistic_model$null.deviance
+logistic_model$deviance
+AIC(logistic_model)
+# Likelihood Ratio Test
+anova(logistic_model, test = "Chisq")
+# =========================================
+# Train-Test Split
+# =========================================
+
+set.seed(123)
+
+train_index <- sample(
+  1:nrow(model_data),
+  size = 0.8 * nrow(model_data)
+)
+
+train_data <- model_data[train_index, ]
+test_data <- model_data[-train_index, ]
+
+# Check dataset sizes
+dim(train_data)
+dim(test_data)
+
+# Check survival distribution
+table(train_data$Survived)
+table(test_data$Survived)
+# =========================================
+# Final Logistic Regression Model
+# =========================================
+
+final_model <- glm(
+  Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+  data = train_data,
+  family = binomial
+)
+
+# View model summary
+summary(final_model)
+# =========================================
+# Test Set Predictions
+# =========================================
+
+# Predict survival probabilities
+test_prob <- predict(
+  final_model,
+  newdata = test_data,
+  type = "response"
+)
+# =========================================
+# Fix Factor Levels for Train/Test Data
+# =========================================
+
+train_data$Pclass <- factor(
+  train_data$Pclass,
+  levels = levels(model_data$Pclass)
+)
+
+test_data$Pclass <- factor(
+  test_data$Pclass,
+  levels = levels(model_data$Pclass)
+)
+
+train_data$Sex <- factor(
+  train_data$Sex,
+  levels = levels(model_data$Sex)
+)
+
+test_data$Sex <- factor(
+  test_data$Sex,
+  levels = levels(model_data$Sex)
+)
+
+train_data$Embarked <- factor(
+  train_data$Embarked,
+  levels = levels(model_data$Embarked)
+)
+
+test_data$Embarked <- factor(
+  test_data$Embarked,
+  levels = levels(model_data$Embarked)
+)
+
+# Convert probabilities into Yes/No predictions
+test_pred <- ifelse(test_prob >= 0.5, "Yes", "No")
+
+# Convert predictions to factor
+test_pred <- factor(
+  test_pred,
+  levels = c("No", "Yes")
+)
+
+# View first 10 predictions
+head(test_pred, 10)
+final_model <- glm(
+  Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+  data = train_data,
+  family = binomial
+)
+levels(train_data$Embarked)
+levels(test_data$Embarked)
+table(train_data$Embarked, useNA = "ifany")
+table(test_data$Embarked, useNA = "ifany")
+levels(train_data$Embarked)
+levels(test_data$Embarked)
+
+table(train_data$Embarked, useNA = "ifany")
+table(test_data$Embarked, useNA = "ifany")
+levels(train_data$Embarked)
+levels(test_data$Embarked)
+
+table(train_data$Embarked, useNA = "ifany")
+table(test_data$Embarked, useNA = "ifany")
+# Replace empty Embarked values with the most common port
+train_data$Embarked[train_data$Embarked == ""] <- "S"
+test_data$Embarked[test_data$Embarked == ""] <- "S"
+
+# Reapply factor levels
+train_data$Embarked <- factor(
+  train_data$Embarked,
+  levels = c("C", "Q", "S")
+)
+
+test_data$Embarked <- factor(
+  test_data$Embarked,
+  levels = c("C", "Q", "S")
+)
+
+# Check the result
+table(train_data$Embarked)
+table(test_data$Embarked)
+final_model <- glm(
+  Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+  data = train_data,
+  family = binomial
+)
+
+summary(final_model)
+# =========================================
+# Test Set Predictions
+# =========================================
+
+test_prob <- predict(
+  final_model,
+  newdata = test_data,
+  type = "response"
+)
+
+test_pred <- ifelse(
+  test_prob >= 0.5,
+  "Yes",
+  "No"
+)
+
+test_pred <- factor(
+  test_pred,
+  levels = c("No", "Yes")
+)
+
+# View first 10 predictions
+head(test_pred, 10)
+# =========================================
+# Confusion Matrix
+# =========================================
+
+actual <- factor(
+  test_data$Survived,
+  levels = c("No", "Yes")
+)
+
+confusion_matrix <- table(
+  Actual = actual,
+  Predicted = test_pred
+)
+
+confusion_matrix
+confusion_matrix
+# =========================================
+# Model Performance Metrics
+# =========================================
+
+TN <- confusion_matrix["No", "No"]
+FP <- confusion_matrix["No", "Yes"]
+FN <- confusion_matrix["Yes", "No"]
+TP <- confusion_matrix["Yes", "Yes"]
+
+# Accuracy
+accuracy <- (TP + TN) / (TP + TN + FP + FN)
+
+# Precision
+precision <- TP / (TP + FP)
+
+# Recall
+recall <- TP / (TP + FN)
+
+# F1-score
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+# Display metrics
+accuracy
+precision
+recall
+f1_score
+install.packages("caret")
+library(caret)
+# =========================================
+# 5-Fold Cross-Validation
+# =========================================
+
+set.seed(123)
+
+cv_control <- trainControl(
+  method = "cv",
+  number = 5
+)
+
+cv_model <- train(
+  Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+  data = train_data,
+  method = "glm",
+  family = binomial,
+  trControl = cv_control
+)
+
+cv_model
+cv_model
+install.packages("car")
+library(car)
+# =========================================
+# Multicollinearity Check
+# =========================================
+
+vif_values <- vif(final_model)
+
+vif_values
+vif_values
+# =========================================
+# Logistic Regression Diagnostic Plot
+# =========================================
+
+plot(
+  final_model,
+  which = 1,
+  main = "Residuals vs Fitted Values"
+)
+# =========================================
+# Cook's Distance
+# =========================================
+
+cooks_distance <- cooks.distance(final_model)
+
+# Plot Cook's distance
+plot(
+  cooks_distance,
+  type = "h",
+  main = "Cook's Distance",
+  ylab = "Cook's Distance",
+  xlab = "Observation"
+)
+
+# Identify observations with Cook's distance > 4/n
+influential <- which(
+  cooks_distance > 4 / nrow(train_data)
+)
+
+influential
+cooks_distance <- cooks.distance(final_model)
+head(cooks_distance)
+influential <- which(
+  cooks_distance > 4 / nrow(train_data)
+)
+
+influential
+# Install pROC package if needed
+install.packages("pROC")
+
+# Load package
+library(pROC)
+
+# Create ROC curve
+roc_curve <- roc(
+  test_data$Survived,
+  test_prob,
+  levels = c("No", "Yes"),
+  direction = "<"
+)
+
+# Display ROC curve
+plot(
+  roc_curve,
+  main = "ROC Curve - Logistic Regression"
+)
+
+# Calculate AUC
+auc_value <- auc(roc_curve)
+auc_value
+library(pROC)
+
+roc_curve <- roc(
+  test_data$Survived,
+  test_prob,
+  levels = c("No", "Yes"),
+  direction = "<"
+)
+
+plot(
+  roc_curve,
+  main = "ROC Curve - Logistic Regression"
+)
+library(pROC)
+
+auc_value <- auc(roc_curve)
+auc_value
+roc_curve <- roc(
+  test_data$Survived,
+  test_prob,
+  levels = c("No", "Yes"),
+  direction = "<"
+)
+roc_curve <- roc(
+  test_data$Survived,
+  test_prob,
+  levels = c("No", "Yes"),
+  direction = "<"
+)
+auc_value <- auc(roc_curve)
+auc_value
+roc_curve <- roc(
+  test_data$Survived,
+  test_prob,
+  levels = c("No", "Yes"),
+  direction = "<"
+)
+influential <- which(
+  cooks_distance > 4 / nrow(train_data)
+)
+
+influential
+qqnorm(
+  residuals(final_model, type = "deviance"),
+  install.packages("ResourceSelection")
+  library(ResourceSelection)
+  
+  hl_test <- hoslem.test(
+    as.numeric(test_data$Survived) - 1,
+    test_prob,
+    g = 10
+  )
+  
+  hl_test
+  main = "Q-Q Plot of Deviance Residuals"
+)
+
+qqline(
+  residuals(final_model, type = "deviance")
+)
+install.packages("ResourceSelection")
+library(ResourceSelection)
+hl_test <- hoslem.test(
+  as.numeric(test_data$Survived) - 1,
+  test_prob,
+  g = 10
+)
+
+hl_test
+hl_test <- hoslem.test(
+  as.numeric(test_data$Survived) - 1,
+  test_prob,
+  g = 10
+)
+library(ResourceSelection)
+hl_test <- hoslem.test(
+  as.numeric(test_data$Survived) - 1,
+  test_prob,
+  g = 10
+)
+
+hl_test

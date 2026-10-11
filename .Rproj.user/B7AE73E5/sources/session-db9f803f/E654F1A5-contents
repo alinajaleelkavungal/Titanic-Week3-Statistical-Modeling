@@ -525,3 +525,16 @@ hl_test <- hoslem.test(
 )
 
 hl_test
+hl_test <- hoslem.test(
+  as.numeric(test_data$Survived) - 1,
+  test_prob,
+  g = 10
+)
+library(ResourceSelection)
+hl_test <- hoslem.test(
+  as.numeric(test_data$Survived) - 1,
+  test_prob,
+  g = 10
+)
+
+hl_test
